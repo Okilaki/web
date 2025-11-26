@@ -12,12 +12,11 @@
             --secondary: var(--tg-theme-secondary-bg-color, #2b2b2b);
             --btn: var(--tg-theme-button-color, #3390ec);
             --btn-text: var(--tg-theme-button-text-color, #fff);
-            --red: #ff5555;
             --green: #50fa7b;
         }
         body { margin: 0; padding: 0; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 80px; }
         
-        /* Табы (Меню снизу) */
+        /* Табы */
         .tab-bar {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: var(--secondary); height: 60px;
@@ -35,7 +34,6 @@
         .page { display: none; padding: 20px; animation: fade 0.2s; }
         .page.active { display: block; }
 
-        /* Элементы форм */
         h2 { margin-top: 0; }
         input, select, textarea {
             width: 100%; padding: 12px; margin-bottom: 15px;
@@ -47,27 +45,26 @@
             border: none; border-radius: 10px; font-weight: bold; cursor: pointer;
         }
 
-        /* Список задач */
-        .task-list { list-style: none; padding: 0; margin: 0; }
+        /* Список */
         .task-item {
             background: var(--secondary); padding: 15px; margin-bottom: 10px;
             border-radius: 10px; border-left: 4px solid var(--btn);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .task-info { flex: 1; }
         .task-title { font-weight: bold; font-size: 16px; }
         .task-meta { font-size: 12px; color: #aaa; margin-top: 4px; }
-        
         .btn-done {
             background: transparent; border: 2px solid var(--green); color: var(--green);
             border-radius: 50%; width: 32px; height: 32px; cursor: pointer; margin-left: 10px;
-            display: flex; align-items: center; justify-content: center; font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
         }
-        .btn-done:active { background: var(--green); color: #000; }
 
-        /* Чекбокс Бэклог */
-        .checkbox-wrapper { display: flex; align-items: center; margin-bottom: 15px; cursor: pointer;}
-        .checkbox-wrapper input { width: auto; margin: 0 10px 0 0; }
+        /* Напоминалка */
+        .reminder-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px; border-radius: 8px; margin-bottom: 15px;
+        }
+        .flex-row { display: flex; gap: 10px; }
 
         @keyframes fade { from {opacity: 0;} to {opacity: 1;} }
     </style>
@@ -86,35 +83,30 @@
             <option value="Сегодня">📅 Сегодня</option>
             <option value="Завтра">🌤 Завтра</option>
             <option value="Срочно">🔥 Срочно</option>
+            <option value="Без срока">♾ Без срока</option>
         </select>
 
-        <label class="checkbox-wrapper">
-            <input type="checkbox" id="t_backlog">
-            <span>Отправить в Бэклог (на потом)</span>
-        </label>
-
-        <button class="btn-main" onclick="sendAction('create')">Создать</button>
-
-        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-
-        <h2>⏰ Быстрый таймер</h2>
-        <input type="text" id="r_text" placeholder="О чем напомнить?">
-        <div style="display: flex; gap: 10px;">
-            <input type="number" id="r_time" placeholder="Число">
-            <select id="r_unit" style="width: 80px;">
-                <option value="m">мин</option>
-                <option value="h">час</option>
-            </select>
+        <div class="reminder-box">
+            <label>🔔 Напомнить через (опционально):</label>
+            <div class="flex-row">
+                <input type="number" id="remind_val" placeholder="0">
+                <select id="remind_unit" style="width: 80px;">
+                    <option value="m">мин</option>
+                    <option value="h">час</option>
+                    <option value="d">дней</option>
+                </select>
+            </div>
+            <div style="font-size: 12px; color: #888;">Оставь 0 или пусто, если напоминание не нужно.</div>
         </div>
-        <button class="btn-main" style="background: #e67e22;" onclick="sendAction('remind')">Завести таймер</button>
+
+        <button class="btn-main" onclick="createTask()">Создать задачу</button>
     </div>
 
-    <!-- Страница 2: Мои Задачи -->
+    <!-- Страница 2: Список -->
     <div id="p-list" class="page">
         <h2>📋 Активные задачи</h2>
-        <div id="task-container" class="task-list">
-            <!-- Сюда попадут задачи из Python -->
-            <p style="color: #666; text-align: center; margin-top: 50px;">Загрузка...</p>
+        <div id="task-container">
+            <p style="text-align:center; color:#666;">Загрузка...</p>
         </div>
     </div>
 
@@ -124,7 +116,7 @@
             <div class="tab-icon">➕</div> Создать
         </div>
         <div class="tab-btn" onclick="switchTab('p-list', this)">
-            <div class="tab-icon">📋</div> Задачи
+            <div class="tab-icon">📋</div> Список
         </div>
     </div>
 
@@ -132,38 +124,28 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // 1. ПОЛУЧЕНИЕ ДАННЫХ ПРИ ЗАГРУЗКЕ
-        // Бот передает задачи через параметр ?data=JSON
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             const rawData = urlParams.get('tasks');
-            
             if (rawData) {
                 try {
                     const tasks = JSON.parse(decodeURIComponent(rawData));
                     renderTasks(tasks);
-                } catch (e) {
-                    console.error("Ошибка парсинга задач", e);
-                    document.getElementById('task-container').innerHTML = "<p>Ошибка данных</p>";
-                }
+                } catch (e) { document.getElementById('task-container').innerHTML = "Ошибка данных"; }
             } else {
-                document.getElementById('task-container').innerHTML = "<p style='text-align:center'>Нет активных задач</p>";
+                document.getElementById('task-container').innerHTML = "<p style='text-align:center'>Нет задач</p>";
             }
         };
 
-        // Рендер списка задач
         function renderTasks(tasks) {
             const container = document.getElementById('task-container');
-            container.innerHTML = ""; // Очистить
-
+            container.innerHTML = "";
             if (tasks.length === 0) {
                 container.innerHTML = "<p style='text-align:center'>Список пуст 🌴</p>";
                 return;
             }
-
             tasks.forEach(t => {
-                // Если задача не из бэклога
-                if (t.is_backlog == 0) {
+                if (t.is_backlog == 0) { // Показываем только активные
                     let div = document.createElement('div');
                     div.className = 'task-item';
                     div.innerHTML = `
@@ -178,57 +160,34 @@
             });
         }
 
-        // 2. ОТПРАВКА ДЕЙСТВИЙ
-        function sendAction(type) {
-            let data = {};
-
-            if (type === 'create') {
-                const text = document.getElementById('t_text').value;
-                if (!text) return tg.showAlert("Введи текст!");
-                
-                data = {
-                    action: 'create',
-                    task: text,
-                    deadline: document.getElementById('t_dead').value,
-                    is_backlog: document.getElementById('t_backlog').checked ? 1 : 0
-                };
-            } 
-            else if (type === 'remind') {
-                const text = document.getElementById('r_text').value;
-                const val = document.getElementById('r_time').value;
-                const unit = document.getElementById('r_unit').value;
-                
-                if (!text || !val) return tg.showAlert("Заполни таймер!");
-                
-                data = {
-                    action: 'remind',
-                    text: text,
-                    time_str: val + unit
-                };
-            }
-
-            tg.sendData(JSON.stringify(data));
-        }
-
-        // Закрытие задачи по клику
-        function completeTask(id) {
-            if(!confirm("Закрыть задачу?")) return;
+        function createTask() {
+            const text = document.getElementById('t_text').value;
+            const dead = document.getElementById('t_dead').value;
             
+            // Данные напоминания
+            const rVal = document.getElementById('remind_val').value;
+            const rUnit = document.getElementById('remind_unit').value;
+            
+            if (!text) return tg.showAlert("Введи текст!");
+
             const data = {
-                action: 'close',
-                task_id: id
+                action: 'create',
+                task: text,
+                deadline: dead,
+                // Если ввели число, передаем напоминание
+                reminder: (rVal && rVal > 0) ? rVal + rUnit : null 
             };
             tg.sendData(JSON.stringify(data));
-            
-            // Визуально скрываем сразу
-            event.target.closest('.task-item').style.opacity = '0.5';
         }
 
-        // Переключение табов
+        function completeTask(id) {
+            if(!confirm("Закрыть задачу?")) return;
+            tg.sendData(JSON.stringify({ action: 'close', task_id: id }));
+        }
+
         function switchTab(pageId, btn) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
-            
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
