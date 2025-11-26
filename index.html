@@ -2,123 +2,310 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Новая задача</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Task Manager CRM</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: var(--tg-theme-bg-color, #212121);
+            --bg-color: var(--tg-theme-bg-color, #1e1e1e);
             --text-color: var(--tg-theme-text-color, #ffffff);
-            --hint-color: var(--tg-theme-hint-color, #aaaaaa);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #2b2b2b);
             --btn-color: var(--tg-theme-button-color, #3390ec);
-            --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
-            --secondary-bg: var(--tg-theme-secondary-bg-color, #2f2f2f);
+            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #aaaaaa);
+            --sidebar-width: 250px;
         }
 
         body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: sans-serif;
-            margin: 0;
-            padding: 20px;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- ЛЕВАЯ КОЛОНКА (МЕНЮ) --- */
+        .sidebar {
+            width: 80px; /* Узкая полоска на ПК */
+            background-color: var(--secondary-bg);
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            align-items: center;
+            padding-top: 20px;
+            border-right: 1px solid #3f3f3f;
+            transition: width 0.3s;
         }
+        
+        .sidebar:hover { width: 200px; } /* Раскрывается при наведении */
 
-        h2 { margin-top: 0; text-align: center; }
-
-        label {
-            font-size: 14px;
+        .menu-item {
+            width: 100%;
+            padding: 15px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: var(--hint-color);
-            margin-bottom: 5px;
-            display: block;
+            transition: 0.2s;
+        }
+        .menu-item:hover, .menu-item.active {
+            color: var(--btn-color);
+            background-color: rgba(255,255,255,0.05);
+        }
+        .icon { font-size: 24px; margin-bottom: 5px; }
+        .label { display: none; margin-left: 10px; font-size: 14px; white-space: nowrap;}
+        .sidebar:hover .label { display: block; }
+
+        /* --- ЦЕНТРАЛЬНАЯ ЧАСТЬ --- */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
         }
 
-        input, select {
+        /* --- ПРАВАЯ КОЛОНКА (ЧАТ) --- */
+        .chat-sidebar {
+            width: 300px;
+            background-color: var(--secondary-bg);
+            border-left: 1px solid #3f3f3f;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 15px;
+            border-bottom: 1px solid #3f3f3f;
+            font-weight: bold;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .chat-input-area {
+            padding: 10px;
+            border-top: 1px solid #3f3f3f;
+        }
+
+        /* --- ЭЛЕМЕНТЫ ФОРМЫ --- */
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.3s; }
+
+        h2 { margin-top: 0; }
+        input, select, textarea {
             width: 100%;
             padding: 12px;
-            border-radius: 12px;
-            border: 1px solid #3f3f3f;
-            background-color: var(--secondary-bg);
+            margin-bottom: 15px;
+            background: var(--bg-color);
+            border: 1px solid #444;
             color: var(--text-color);
-            font-size: 16px;
+            border-radius: 8px;
             box-sizing: border-box;
             outline: none;
         }
+        input:focus { border-color: var(--btn-color); }
 
-        input:focus, select:focus { border-color: var(--btn-color); }
-
-        #btn {
-            margin-top: 10px;
-            padding: 15px;
+        button.primary-btn {
             width: 100%;
-            background-color: var(--btn-color);
-            color: var(--btn-text-color);
+            padding: 14px;
+            background: var(--btn-color);
+            color: var(--btn-text);
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 10px;
             font-weight: bold;
             cursor: pointer;
-            transition: opacity 0.2s;
         }
 
-        #btn:active { opacity: 0.8; }
+        /* Карточки задач (Для примера) */
+        .task-card {
+            background: var(--secondary-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--btn-color);
+        }
+        .task-meta { font-size: 12px; color: var(--hint-color); margin-top: 5px; }
+
+        /* --- МОБИЛЬНАЯ АДАПТАЦИЯ --- */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            
+            .sidebar {
+                width: 100%;
+                height: 60px;
+                flex-direction: row;
+                justify-content: space-around;
+                order: 3; /* Меню снизу */
+                padding: 0;
+                border-top: 1px solid #3f3f3f;
+                border-right: none;
+            }
+            .sidebar:hover { width: 100%; }
+            .menu-item { flex-direction: column; padding: 5px; }
+            .icon { font-size: 20px; margin: 0; }
+            .label { display: block; font-size: 10px; margin: 0; }
+            
+            .main-content { order: 1; padding: 15px; }
+            
+            .chat-sidebar { display: none; } /* Скрываем чат на мобиле пока */
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <h2>📝 Добавить задачу</h2>
-
-    <div>
-        <label for="task">Текст задачи</label>
-        <input type="text" id="task" placeholder="Например: Сдать отчет" autocomplete="off">
+    <!-- ЛЕВОЕ МЕНЮ -->
+    <div class="sidebar">
+        <div class="menu-item active" onclick="showPage('create')">
+            <div class="icon">➕</div>
+            <div class="label">Создать</div>
+        </div>
+        <div class="menu-item" onclick="showPage('tasks')">
+            <div class="icon">📋</div>
+            <div class="label">Задачи</div>
+        </div>
+        <div class="menu-item" onclick="showPage('backlog')">
+            <div class="icon">📦</div>
+            <div class="label">Backlog</div>
+        </div>
+        <div class="menu-item" onclick="showPage('chat-mobile')">
+            <div class="icon">💬</div>
+            <div class="label">Чат</div>
+        </div>
     </div>
 
-    <div>
-        <label for="deadline">Срок выполнения</label>
-        <select id="deadline">
-            <option value="Сегодня">📅 Сегодня</option>
-            <option value="Завтра">🌤 Завтра</option>
-            <option value="На неделе">🗓 На неделе</option>
-            <option value="Срочно">🔥 Срочно</option>
-            <option value="Без срока">♾ Без срока</option>
-        </select>
-    </div>
-    
-    <div>
-        <label for="custom_deadline">Или точное время (необязательно)</label>
-        <input type="text" id="custom_deadline" placeholder="Например: Пятница 18:00">
+    <!-- ЦЕНТРАЛЬНАЯ ОБЛАСТЬ -->
+    <div class="main-content">
+        
+        <!-- Страница 1: Создание -->
+        <div id="create" class="page active">
+            <h2>✨ Новая заявка</h2>
+            <label>Суть задачи</label>
+            <textarea id="task_text" rows="3" placeholder="Опиши, что нужно сделать..."></textarea>
+            
+            <label>Дедлайн</label>
+            <select id="deadline_select">
+                <option value="Сегодня">Сегодня</option>
+                <option value="Завтра">Завтра</option>
+                <option value="Срочно">🔥 Срочно</option>
+                <option value="custom">Другое...</option>
+            </select>
+            <input type="text" id="deadline_custom" placeholder="Например: 25.12 в 10:00" style="display:none;">
+
+            <button class="primary-btn" onclick="sendTask()">Создать задачу</button>
+        </div>
+
+        <!-- Страница 2: Список задач (Демо) -->
+        <div id="tasks" class="page">
+            <h2>📋 Мои задачи</h2>
+            <p style="color: #aaa; font-size: 12px;">(Демонстрация интерфейса)</p>
+            
+            <div class="task-card">
+                <div>Проверить сервер</div>
+                <div class="task-meta">📅 Сегодня | 👤 @admin</div>
+            </div>
+            <div class="task-card" style="border-left-color: #ff5555;">
+                <div>Починить баг в WebApp</div>
+                <div class="task-meta">🔥 Срочно | 👤 @okilaki</div>
+            </div>
+        </div>
+
+        <!-- Страница 3: Backlog (Демо) -->
+        <div id="backlog" class="page">
+            <h2>📦 Бэклог (Идеи)</h2>
+            <div class="task-card" style="border-left-color: #aaa;">
+                <div>Добавить интеграцию с Google Calendar</div>
+            </div>
+            <div class="task-card" style="border-left-color: #aaa;">
+                <div>Сделать темную тему автоматической</div>
+            </div>
+        </div>
+        
+         <!-- Страница 4: Чат (Только для мобилок) -->
+         <div id="chat-mobile" class="page">
+            <h2>💬 Чат группы</h2>
+            <div class="chat-messages" style="height: 300px; background: var(--secondary-bg); border-radius: 10px; margin-bottom: 10px;">
+                <p style="padding: 10px; color: #888;">Здесь будет история переписки...</p>
+            </div>
+            <input type="text" placeholder="Написать сообщение...">
+        </div>
     </div>
 
-    <button id="btn">Создать</button>
+    <!-- ПРАВАЯ КОЛОНКА (ЧАТ - ТОЛЬКО ДЛЯ ПК) -->
+    <div class="chat-sidebar" id="pc-chat">
+        <div class="chat-header">Командный чат</div>
+        <div class="chat-messages">
+            <div style="margin-bottom: 10px;">
+                <span style="color: var(--btn-color); font-weight: bold;">@admin:</span>
+                Всем привет!
+            </div>
+            <div style="margin-bottom: 10px;">
+                <span style="color: #ff5555; font-weight: bold;">@okilaki:</span>
+                Бот запущен?
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" placeholder="Написать..." style="margin: 0;">
+        </div>
+    </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        let btn = document.getElementById("btn");
-
-        btn.addEventListener("click", () => {
-            let task = document.getElementById("task").value;
-            let deadlineSelect = document.getElementById("deadline").value;
-            let deadlineCustom = document.getElementById("custom_deadline").value;
+        // Логика переключения вкладок
+        function showPage(pageId) {
+            // Скрываем все страницы
+            document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
             
-            // Если введено кастомное время, берем его, иначе из списка
-            let finalDeadline = deadlineCustom.trim() !== "" ? deadlineCustom : deadlineSelect;
+            // Показываем нужную
+            document.getElementById(pageId).classList.add('active');
+            
+            // Подсветка кнопки (примитивно)
+            event.currentTarget.classList.add('active');
+        }
 
-            if (task.trim() === "") {
-                tg.showAlert("Пожалуйста, введите текст задачи!");
+        // Логика поля даты
+        document.getElementById('deadline_select').addEventListener('change', function() {
+            let customInput = document.getElementById('deadline_custom');
+            if (this.value === 'custom') {
+                customInput.style.display = 'block';
+            } else {
+                customInput.style.display = 'none';
+            }
+        });
+
+        // Отправка данных в бота
+        function sendTask() {
+            let text = document.getElementById('task_text').value;
+            let selectVal = document.getElementById('deadline_select').value;
+            let customVal = document.getElementById('deadline_custom').value;
+            
+            let finalDead = (selectVal === 'custom') ? customVal : selectVal;
+
+            if (!text) {
+                tg.showAlert("Напиши суть задачи!");
                 return;
             }
 
             let data = {
-                task: task,
-                deadline: finalDeadline
+                task: text,
+                deadline: finalDead
             };
 
             tg.sendData(JSON.stringify(data));
-        });
+        }
+
+        // Адаптив чата: на мобилке скрываем правую панель
+        if (window.innerWidth <= 768) {
+            document.getElementById('pc-chat').style.display = 'none';
+        }
     </script>
 </body>
 </html>
