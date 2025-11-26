@@ -3,224 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CRM</title>
+    <title>Tasks</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg: var(--tg-theme-bg-color, #1e1e1e);
-            --text: var(--tg-theme-text-color, #fff);
-            --secondary: var(--tg-theme-secondary-bg-color, #2b2b2b);
-            --btn: var(--tg-theme-button-color, #3390ec);
-            --btn-text: var(--tg-theme-button-text-color, #fff);
-            --green: #50fa7b; --red: #ff5555;
+        body {
+            background-color: var(--tg-theme-bg-color, #1e1e1e);
+            color: var(--tg-theme-text-color, #fff);
+            font-family: sans-serif; margin: 0; padding: 15px; padding-bottom: 80px;
         }
-        body { margin: 0; padding: 20px; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 90px; }
-        
-        /* Скрываем скроллбар */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-
-        /* Табы */
-        .tab-bar {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(43, 43, 43, 0.9); backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 10px 20px; display: flex; gap: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #444; z-index: 100;
-        }
-        .tab-btn {
-            color: #888; font-size: 24px; cursor: pointer; transition: 0.2s;
-            padding: 5px 10px; border-radius: 10px;
-        }
-        .tab-btn.active { color: var(--btn); background: rgba(255,255,255,0.05); }
-
-        /* Поля */
-        h2 { margin-top: 0; font-size: 20px; }
-        label { font-size: 13px; color: #aaa; margin-bottom: 5px; display: block; }
-        
-        input, select, textarea {
-            width: 100%; padding: 14px; margin-bottom: 15px;
-            background: var(--secondary); border: 1px solid #3f3f3f;
-            color: var(--text); border-radius: 12px; box-sizing: border-box; outline: none; font-size: 16px;
-        }
-        textarea { resize: none; font-family: sans-serif; }
-        input:focus, select:focus, textarea:focus { border-color: var(--btn); }
-
-        /* Кнопка */
-        .btn-main {
-            width: 100%; padding: 16px; background: var(--btn); color: var(--btn-text);
-            border: none; border-radius: 14px; font-weight: bold; font-size: 16px; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(51, 144, 236, 0.3);
-        }
-        .btn-main:active { transform: scale(0.98); }
-
-        /* Напоминалка (Встроенная) */
-        .timer-row {
-            display: flex; align-items: center; gap: 10px; background: var(--secondary);
-            padding: 10px; border-radius: 12px; border: 1px solid #3f3f3f; margin-bottom: 15px;
-        }
-        .timer-icon { font-size: 20px; }
-        .timer-input { margin: 0; border: none; background: transparent; padding: 5px; text-align: right;}
-
-        /* Список задач */
-        .task-item {
-            background: var(--secondary); padding: 16px; margin-bottom: 12px;
-            border-radius: 14px; border-left: 5px solid var(--btn);
+        /* Стили карточек */
+        .task-card {
+            background: var(--tg-theme-secondary-bg-color, #2d2d2d);
+            padding: 15px; border-radius: 12px; margin-bottom: 10px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid #3390ec;
         }
-        .task-item.backlog { border-left-color: #aaa; opacity: 0.8; }
+        .task-card.backlog { border-left-color: #888; opacity: 0.7; }
+        .task-info div:first-child { font-weight: bold; margin-bottom: 5px; }
+        .task-info div:last-child { font-size: 12px; opacity: 0.7; }
         
-        .task-main { flex: 1; }
-        .task-text { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
-        .task-sub { font-size: 12px; color: #888; display: flex; gap: 10px; }
-        
-        .btn-done {
-            width: 36px; height: 36px; border-radius: 50%;
-            border: 2px solid var(--green); color: var(--green);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; cursor: pointer; margin-left: 10px;
+        .btn-check {
+            width: 30px; height: 30px; border: 2px solid #50fa7b; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: #50fa7b; cursor: pointer;
         }
 
-        .page { display: none; animation: slide 0.3s; }
+        /* Вкладки */
+        .tabs {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+            background: var(--tg-theme-secondary-bg-color, #2d2d2d);
+            display: flex; border-top: 1px solid #444; z-index: 99;
+        }
+        .tab { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; }
+        .tab.active { color: #3390ec; background: rgba(255,255,255,0.05); }
+
+        /* Страницы */
+        .page { display: none; }
         .page.active { display: block; }
-        @keyframes slide { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+
+        /* Форма */
+        input, select, textarea {
+            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 10px;
+            border: 1px solid #444; background: #333; color: #fff; box-sizing: border-box;
+        }
+        .btn-main {
+            width: 100%; padding: 15px; background: #3390ec; color: #fff; border: none;
+            border-radius: 10px; font-weight: bold; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <!-- СТРАНИЦА: СОЗДАТЬ -->
-    <div id="p-create" class="page active">
-        <h2>✨ Новая задача</h2>
+    <!-- Страница 1: СПИСОК -->
+    <div id="view-list" class="page active">
+        <h2 style="margin-top:0">Мои задачи</h2>
+        <div id="list-container">Загрузка...</div>
+    </div>
+
+    <!-- Страница 2: СОЗДАТЬ -->
+    <div id="view-create" class="page">
+        <h2 style="margin-top:0">Новая задача</h2>
         
-        <label>Что нужно сделать?</label>
-        <textarea id="t_text" rows="2" placeholder="Например: Проверить отчет..."></textarea>
+        <label>Текст задачи</label>
+        <input type="text" id="inp-task" placeholder="Купить молоко">
         
-        <label>Срок выполнения</label>
-        <select id="t_dead">
-            <option value="Сегодня">📅 Сегодня</option>
-            <option value="Завтра">🌤 Завтра</option>
+        <label>Срок</label>
+        <select id="inp-dead">
+            <option value="Сегодня">Сегодня</option>
+            <option value="Завтра">Завтра</option>
             <option value="Срочно">🔥 Срочно</option>
-            <option value="Без срока">♾ Без срока</option>
         </select>
 
-        <!-- Таймер внутри задачи -->
-        <label>🔔 Таймер / Напоминание (если нужно)</label>
-        <div class="timer-row">
-            <div class="timer-icon">⏰</div>
-            <input type="number" id="r_val" placeholder="0" class="timer-input">
-            <select id="r_unit" style="width: 80px; margin: 0; border: none; background: #333;">
-                <option value="m">мин</option>
-                <option value="h">час</option>
-                <option value="d">дн.</option>
+        <label>Таймер (число + м/ч)</label>
+        <div style="display:flex; gap:10px;">
+            <input type="number" id="inp-time" placeholder="0">
+            <select id="inp-unit" style="width:80px;">
+                <option value="60">мин</option>
+                <option value="3600">час</option>
             </select>
         </div>
 
-        <!-- Галка Бэклог -->
-        <div style="display: flex; align-items: center; margin-bottom: 20px; cursor: pointer;" onclick="document.getElementById('t_back').click()">
-            <input type="checkbox" id="t_back" style="width: 20px; height: 20px; margin: 0 10px 0 0;">
-            <span style="font-size: 14px;">📦 Закинуть в Бэклог (сделать потом)</span>
+        <div style="margin-bottom: 20px; display: flex; align-items: center;">
+            <input type="checkbox" id="inp-backlog" style="width: 20px; height: 20px; margin: 0 10px 0 0;">
+            <label for="inp-backlog" style="margin:0">В бэклог</label>
         </div>
 
-        <button class="btn-main" onclick="createTask()">Создать задачу</button>
+        <button class="btn-main" onclick="sendCreate()">Создать</button>
     </div>
 
-    <!-- СТРАНИЦА: СПИСОК -->
-    <div id="p-list" class="page">
-        <h2>📋 Мои задачи</h2>
-        <div id="list-container">
-            <p style="text-align: center; color: #666; margin-top: 50px;">Загрузка...</p>
-        </div>
-    </div>
-
-    <!-- МЕНЮ (Плавающее) -->
-    <div class="tab-bar">
-        <div class="tab-btn active" onclick="nav('p-create', this)">➕</div>
-        <div class="tab-btn" onclick="nav('p-list', this)">📋</div>
+    <!-- Навигация -->
+    <div class="tabs">
+        <div class="tab active" onclick="nav('view-list', this)">📋 Список</div>
+        <div class="tab" onclick="nav('view-create', this)">➕ Создать</div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // 1. Читаем задачи из URL
+        // 1. Инициализация (Чтение задач из ссылки)
         window.onload = () => {
             const params = new URLSearchParams(window.location.search);
-            const raw = params.get('tasks');
-            if(raw) {
-                try {
-                    const tasks = JSON.parse(decodeURIComponent(raw));
-                    render(tasks);
-                } catch(e) { document.getElementById('list-container').innerHTML = "Ошибка данных"; }
-            } else {
-                document.getElementById('list-container').innerHTML = "<p style='text-align:center'>Пусто</p>";
-            }
-        };
-
-        function render(tasks) {
-            const box = document.getElementById('list-container');
-            box.innerHTML = "";
+            const raw = params.get('data'); // Бот передает параметр ?data=...
             
-            // Сортировка: Сначала активные, потом бэклог
-            tasks.sort((a,b) => a.is_backlog - b.is_backlog);
+            const container = document.getElementById('list-container');
+            container.innerHTML = "";
 
-            if(tasks.length === 0) {
-                box.innerHTML = "<p style='text-align:center; color: #666;'>Нет задач 🌴</p>";
+            if (!raw) {
+                container.innerHTML = "<p style='text-align:center; color:#777'>Нет данных (открой через новое меню)</p>";
                 return;
             }
 
-            tasks.forEach(t => {
-                let div = document.createElement('div');
-                div.className = `task-item ${t.is_backlog ? 'backlog' : ''}`;
+            try {
+                const tasks = JSON.parse(decodeURIComponent(raw));
                 
-                let icon = t.is_backlog ? '📦' : '📌';
-                if(t.deadline.includes("Срочно")) icon = '🔥';
+                if (tasks.length === 0) {
+                    container.innerHTML = "<p style='text-align:center; color:#777'>Список пуст ✨</p>";
+                    return;
+                }
 
-                div.innerHTML = `
-                    <div class="task-main">
-                        <div class="task-text">${icon} ${t.task_text}</div>
-                        <div class="task-sub">
-                            <span>📅 ${t.deadline}</span>
+                tasks.forEach(t => {
+                    let div = document.createElement('div');
+                    div.className = `task-card ${t.is_backlog ? 'backlog' : ''}`;
+                    
+                    let icon = t.is_backlog ? '📦' : '📌';
+                    
+                    div.innerHTML = `
+                        <div class="task-info">
+                            <div>${icon} ${t.task_text}</div>
+                            <div>⏰ ${t.deadline}</div>
                         </div>
-                    </div>
-                    <div class="btn-done" onclick="closeTask(${t.id})">✔</div>
-                `;
-                box.appendChild(div);
-            });
-        }
+                        <div class="btn-check" onclick="sendClose(${t.id})">✔</div>
+                    `;
+                    container.appendChild(div);
+                });
 
-        function createTask() {
-            let txt = document.getElementById('t_text').value;
-            let dead = document.getElementById('t_dead').value;
-            let back = document.getElementById('t_back').checked ? 1 : 0;
-            let rVal = document.getElementById('r_val').value;
-            let rUnit = document.getElementById('r_unit').value;
+            } catch (e) {
+                container.innerHTML = "Ошибка чтения данных";
+            }
+        };
 
-            if(!txt) return tg.showAlert("Введите текст задачи!");
+        // 2. Отправка "Создать"
+        function sendCreate() {
+            const task = document.getElementById('inp-task').value;
+            if(!task) return tg.showAlert("Введи задачу!");
 
-            // Собираем напоминалку
-            let reminder = (rVal && rVal > 0) ? rVal + rUnit : null;
+            const timeVal = document.getElementById('inp-time').value;
+            const timeUnit = document.getElementById('inp-unit').value;
+            let totalSec = 0;
+            if (timeVal > 0) totalSec = timeVal * timeUnit;
 
-            let data = {
+            const data = {
                 action: 'create',
-                task: txt,
-                deadline: dead,
-                is_backlog: back,
-                reminder: reminder
+                task: task,
+                deadline: document.getElementById('inp-dead').value,
+                is_backlog: document.getElementById('inp-backlog').checked ? 1 : 0,
+                reminder_sec: totalSec
             };
             tg.sendData(JSON.stringify(data));
         }
 
-        function closeTask(id) {
+        // 3. Отправка "Закрыть"
+        function sendClose(id) {
             if(confirm("Завершить задачу?")) {
                 tg.sendData(JSON.stringify({ action: 'close', id: id }));
             }
         }
 
-        function nav(id, btn) {
-            document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active'));
-            btn.classList.add('active');
-        }
-    </script>
-</body>
-</html>
+        // Навигация
+        function nav(viewId, btn) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.rem
