@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новая задача</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #212121);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #aaaaaa);
+            --btn-color: var(--tg-theme-button-color, #3390ec);
+            --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #2f2f2f);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h2 { margin-top: 0; text-align: center; }
+
+        label {
+            font-size: 14px;
+            color: var(--hint-color);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid #3f3f3f;
+            background-color: var(--secondary-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        input:focus, select:focus { border-color: var(--btn-color); }
+
+        #btn {
+            margin-top: 10px;
+            padding: 15px;
+            width: 100%;
+            background-color: var(--btn-color);
+            color: var(--btn-text-color);
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        #btn:active { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <h2>📝 Добавить задачу</h2>
+
+    <div>
+        <label for="task">Текст задачи</label>
+        <input type="text" id="task" placeholder="Например: Сдать отчет" autocomplete="off">
+    </div>
+
+    <div>
+        <label for="deadline">Срок выполнения</label>
+        <select id="deadline">
+            <option value="Сегодня">📅 Сегодня</option>
+            <option value="Завтра">🌤 Завтра</option>
+            <option value="На неделе">🗓 На неделе</option>
+            <option value="Срочно">🔥 Срочно</option>
+            <option value="Без срока">♾ Без срока</option>
+        </select>
+    </div>
+    
+    <div>
+        <label for="custom_deadline">Или точное время (необязательно)</label>
+        <input type="text" id="custom_deadline" placeholder="Например: Пятница 18:00">
+    </div>
+
+    <button id="btn">Создать</button>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let btn = document.getElementById("btn");
+
+        btn.addEventListener("click", () => {
+            let task = document.getElementById("task").value;
+            let deadlineSelect = document.getElementById("deadline").value;
+            let deadlineCustom = document.getElementById("custom_deadline").value;
+            
+            // Если введено кастомное время, берем его, иначе из списка
+            let finalDeadline = deadlineCustom.trim() !== "" ? deadlineCustom : deadlineSelect;
+
+            if (task.trim() === "") {
+                tg.showAlert("Пожалуйста, введите текст задачи!");
+                return;
+            }
+
+            let data = {
+                task: task,
+                deadline: finalDeadline
+            };
+
+            tg.sendData(JSON.stringify(data));
+        });
+    </script>
+</body>
+</html>
